@@ -155,7 +155,7 @@ private extension ViewController {
             delay: 0,
             usingSpringWithDamping: 0.4,
             initialSpringVelocity: 10,
-            options: [],
+            options: .allowUserInteraction,
             animations: {
                 self.menuButton.transform = .init(rotationAngle: self.menuIsOpen ? .pi / 4 : .zero)
                 self.view.layoutIfNeeded()
@@ -171,14 +171,24 @@ private extension ViewController {
         imageView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(imageView)
         
-        let bottomContraint = imageView.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: imageView.frame.height)
-        let widthConstraint = imageView.widthAnchor.constraint(equalTo: view.widthAnchor, multiplier: 1 / 3, constant: -50)
+        let containerView = UIView(frame: imageView.frame)
+        view.addSubview(containerView)
+        containerView.addSubview(imageView)
+        containerView.translatesAutoresizingMaskIntoConstraints = false
+        
+        let bottomContraint = containerView.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: containerView.frame.height)
+        let widthConstraint = containerView.widthAnchor.constraint(equalTo: view.widthAnchor, multiplier: 1 / 3, constant: -50)
         
         NSLayoutConstraint.activate([
             bottomContraint,
             widthConstraint,
-            imageView.heightAnchor.constraint(equalTo: imageView.widthAnchor),
-            imageView.centerXAnchor.constraint(equalTo: view.centerXAnchor)
+            containerView.heightAnchor.constraint(equalTo: containerView.widthAnchor),
+            containerView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            
+            imageView.heightAnchor.constraint(equalTo: containerView.heightAnchor),
+            imageView.widthAnchor.constraint(equalTo: containerView.widthAnchor),
+            imageView.centerYAnchor.constraint(equalTo: containerView.centerYAnchor),
+            imageView.centerXAnchor.constraint(equalTo: containerView.centerXAnchor)
         ])
         
         view.layoutIfNeeded()
@@ -196,20 +206,37 @@ private extension ViewController {
             }
         )
         
-        UIView.animate(withDuration: 2 / 3, delay: 2) {
-            bottomContraint.constant = imageView.frame.height
-            widthConstraint.constant = -50
-            self.view.layoutIfNeeded()
-        } completion: { _ in
-            imageView.removeFromSuperview()
+        delay(seconds: 1) {
+            UIView.transition(
+                with: containerView,
+                duration: 1,
+                options: .transitionFlipFromBottom
+            ) {
+                imageView.removeFromSuperview()
+            } completion: { _ in
+                containerView.removeFromSuperview()
+            }
         }
     }
     
     func transitionCloseMenu() {
         delay(seconds: 0.35, execute: toggleMenu)
+        
+        if let titleBar = slider?.superview {
+            UIView.transition(
+                with: titleBar,
+                duration: 0.5,
+                options: [.transitionFlipFromBottom]
+            ) {
+                self.slider?.isHidden = true
+            } completion: { _ in
+                self.slider?.isHidden = false
+            }
+
+        }
     }
 }
 
-fileprivate func delay(seconds: TimeInterval, execute: @escaping () -> Void) {
+private func delay(seconds: TimeInterval, execute: @escaping () -> Void) {
     DispatchQueue.main.asyncAfter(deadline: .now() + seconds, execute: execute)
 }
